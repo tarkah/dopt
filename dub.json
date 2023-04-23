@@ -1,0 +1,11 @@
+{
+	"authors": [
+		"tarkah"
+	],
+	"copyright": "Copyright © 2023, tarkah",
+	"description": "D struct opt parser",
+	"license": "Zlib",
+    "version": "0.0.0",
+	"name": "dopt",
+    "targetType": "autodetect",
+}
