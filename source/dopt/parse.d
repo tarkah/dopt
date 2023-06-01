@@ -346,9 +346,13 @@ static Nullable!(Result!T) subcommand(T)(ref T t, ref string[] args, string[] pa
                 }
             }
         }
-    }
 
-    return Nullable!(Result!T).init;
+        throw new GetOptException("Missing [command]");
+    }
+    else
+    {
+        return Nullable!(Result!T).init;
+    }
 }
 
 static ulong subcommandPosition(T)(ref string[] args)
