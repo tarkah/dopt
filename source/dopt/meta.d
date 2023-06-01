@@ -105,7 +105,7 @@ Nullable!Command find(Command cmd, string[] path)
     return Nullable!Command.init;
 }
 
-static Global global(alias arg)()
+private static Global global(alias arg)()
 {
     static _long = uda.longValue!(arg);
     static _short = uda.shortValue!(arg);
@@ -116,7 +116,7 @@ static Global global(alias arg)()
     return Global(_long, _short, required, help, value);
 }
 
-static Option option(alias arg)()
+private static Option option(alias arg)()
 {
     static _long = uda.longValue!(arg);
     static _short = uda.shortValue!(arg);
@@ -127,7 +127,7 @@ static Option option(alias arg)()
     return Option(_long, _short, required, help, value);
 }
 
-static Value value(alias arg)()
+private static Value value(alias arg)()
 {
     static if (isBoolean!(typeof(arg)))
     {
@@ -143,7 +143,7 @@ static Value value(alias arg)()
     }
 }
 
-static Positional positional(alias arg)()
+private static Positional positional(alias arg)()
 {
     static name = uda.positionalValue!(arg);
     static required = uda.requiredValue!(arg);
@@ -153,7 +153,7 @@ static Positional positional(alias arg)()
     return Positional(name, required, help, isArray);
 }
 
-static Command[] subcommands(T)(Command cmd)
+private static Command[] subcommands(T)(Command cmd)
 {
     Command[] cmds = [];
 

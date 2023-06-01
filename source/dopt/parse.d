@@ -5,7 +5,7 @@ import std.conv : text, ConvException;
 import std.exception : basicExceptionCtors;
 import std.format : format;
 import std.getopt : getopt, config, arraySep, GetOptException;
-import std.range : empty;
+import std.range : empty, enumerate;
 import std.sumtype : isSumType, SumType, match;
 import std.traits : getSymbolsByUDA, getUDAs;
 import std.typecons : tuple, Nullable, nullable;
@@ -13,6 +13,7 @@ import std.uni : toLower;
 
 import dopt.uda;
 import dopt.format : printHelp, printUsage, printVersion;
+import dopt.meta : isNonStrArray;
 
 struct Help
 {
@@ -263,21 +264,45 @@ static positionals(T)(ref T t, ref string[] args)
     static foreach (positional; getSymbolsByUDA!(T, Positional))
     {
         // TODO: Handle optional positional args, currently they are always required
+        static if (isNonStrArray!(typeof(positional)))
         {
-            // Hacky solution to support positionals w/ getopt =P
-            args = [args[0]] ~ "--positional" ~ args[1 .. $];
+            if (args[1 .. $].length > 1)
+            {
+                // Safe to assume positional array is always last? (at least for now while
+                // we assume space separated values)
+                mixin(`t.` ~ positional.stringof ~ `.length = args[1 .. $].length;`);
 
-            mixin(`auto opts = tuple("positional",` ~ `&t.` ~ positional.stringof ~ ");");
+                args[1 .. $].enumerate().each!((i, arg) {
+                    auto _args = [args[0], "--positional", arg];
 
-            arraySep = ",";
+                    mixin(`auto opts = tuple("positional",` ~ `&t.` ~ positional.stringof ~ "[i]);");
 
+                    getopt(_args, config.caseSensitive, config.required, opts.expand);
+                });
+            }
+            else
+            {
+                throw new GetOptException(format!"Missing values for argument [%s]..."(
+                        positionalValue!positional));
+            }
+        }
+        else
+        {
             try
             {
+                // Hacky solution to support positionals w/ getopt =P
+                args = [args[0]] ~ "--positional" ~ args[1 .. $];
+
+                mixin(`auto opts = tuple("positional",` ~ `&t.` ~ positional.stringof ~ ");");
+
+                arraySep = ",";
+
                 getopt(args, config.caseSensitive, config.required, opts.expand);
             }
             catch (GetOptException err)
             {
-                throw new GetOptException(format!"Missing value for argument [%s]"(positionalValue!positional));
+                throw new GetOptException(format!"Missing value for argument [%s]"(
+                        positionalValue!positional));
             }
         }
     }
