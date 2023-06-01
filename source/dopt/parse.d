@@ -231,28 +231,27 @@ static globals(T)(ref T t, ref string[] args)
 
 static BuiltinFlag options(T)(ref T t, ref string[] args)
 {
-    if (args.length > 1)
+    bool _version = false;
+
+    mixin setupOptCallbacks!T;
+    mixin("auto opts = " ~ genOpts!(T, false) ~ `~ tuple("version|V", &_version);`);
+
+    ulong cmdPos = subcommandPosition!(T)(args);
+    ulong end = cmdPos > 0 ? cmdPos : args.length;
+    auto target = args[0 .. end];
+
+    arraySep = ",";
+    auto result = getopt(target, config.caseSensitive, config.noPassThrough, opts.expand);
+
+    args = target ~ args[end .. $];
+
+    if (result.helpWanted)
     {
-        bool _version = false;
-
-        mixin setupOptCallbacks!T;
-        mixin("auto opts = " ~ genOpts!(T, false) ~ `~ tuple("version|V", &_version);`);
-
-        ulong cmdPos = subcommandPosition!(T)(args);
-        ulong end = cmdPos > 0 ? cmdPos : args.length;
-        auto target = args[0 .. end];
-
-        arraySep = ",";
-        auto result = getopt(target, config.caseSensitive, config.noPassThrough, opts.expand);
-
-        args = target ~ args[end .. $];
-
-        if (result.helpWanted)
-        {
-            return BuiltinFlag.Help;
-        } else if (_version) {
-            return BuiltinFlag.Version;
-        }
+        return BuiltinFlag.Help;
+    }
+    else if (_version)
+    {
+        return BuiltinFlag.Version;
     }
 
     return BuiltinFlag.None;
@@ -260,20 +259,17 @@ static BuiltinFlag options(T)(ref T t, ref string[] args)
 
 static positionals(T)(ref T t, ref string[] args)
 {
-    if (args.length > 1)
+    static foreach (positional; getSymbolsByUDA!(T, Positional))
     {
-        static foreach (positional; getSymbolsByUDA!(T, Positional))
+        // TODO: Handle optional positional args, currently they are always required
         {
-            // TODO: Handle optional positional args, currently they are always required
-            {
-                // Hacky solution to support positionals w/ getopt =P
-                args = [args[0]] ~ "--positional" ~ args[1 .. $];
+            // Hacky solution to support positionals w/ getopt =P
+            args = [args[0]] ~ "--positional" ~ args[1 .. $];
 
-                mixin(`auto opts = tuple("positional",` ~ `&t.` ~ positional.stringof ~ ");");
+            mixin(`auto opts = tuple("positional",` ~ `&t.` ~ positional.stringof ~ ");");
 
-                arraySep = ",";
-                getopt(args, config.caseSensitive, config.required, opts.expand);
-            }
+            arraySep = ",";
+            getopt(args, config.caseSensitive, config.required, opts.expand);
         }
     }
 }
