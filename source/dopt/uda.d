@@ -56,7 +56,7 @@ struct Parse(T)
     T function(string s) value;
 }
 
-package static string commandValue(alias T)()
+static string commandValue(alias T)()
 {
     alias uda = getUDAs!(T, Command);
 
@@ -71,7 +71,7 @@ package static string commandValue(alias T)()
 
 }
 
-package static string helpValue(alias T)()
+static string helpValue(alias T)()
 {
     alias uda = getUDAs!(T, Help);
 
@@ -85,7 +85,7 @@ package static string helpValue(alias T)()
     }
 }
 
-package static string versionValue(alias T)()
+static string versionValue(alias T)()
 {
     alias uda = getUDAs!(T, Version);
 
@@ -99,7 +99,7 @@ package static string versionValue(alias T)()
     }
 }
 
-package static string positionalValue(alias T)()
+static string positionalValue(alias T)()
 {
     alias uda = getUDAs!(T, Positional);
 
@@ -114,7 +114,7 @@ package static string positionalValue(alias T)()
 
 }
 
-package static string longValue(alias T)()
+static string longValue(alias T)()
 {
     alias uda = getUDAs!(T, Long);
 
@@ -128,7 +128,7 @@ package static string longValue(alias T)()
     }
 }
 
-package static string shortValue(alias T)()
+static string shortValue(alias T)()
 {
     alias uda = getUDAs!(T, Short);
 
@@ -142,7 +142,7 @@ package static string shortValue(alias T)()
     }
 }
 
-package static bool requiredValue(alias T)()
+static bool requiredValue(alias T)()
 {
     alias uda = getUDAs!(T, Required);
 
