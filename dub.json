@@ -5,7 +5,7 @@
 	"copyright": "Copyright © 2023, tarkah",
 	"description": "D struct opt parser",
 	"license": "Zlib",
-    "version": "0.0.0",
+  "version": "0.1.0",
 	"name": "dopt",
-    "targetType": "autodetect",
+  "targetType": "autodetect",
 }
