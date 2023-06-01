@@ -1,0 +1,14 @@
+{
+	"authors": [
+	    "tarkah"
+	],
+	"copyright": "Copyright © 2023, tarkah",
+	"description": "dopt example",
+	"license": "proprietary",
+	"name": "example",
+  "dependencies": {
+      "dopt": {
+          "path": "../"
+      }
+  }
+}
