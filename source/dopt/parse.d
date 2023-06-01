@@ -3,6 +3,7 @@ module dopt.parse;
 import std.algorithm : findSplitBefore, filter, each;
 import std.conv : text, ConvException;
 import std.exception : basicExceptionCtors;
+import std.format : format;
 import std.getopt : getopt, config, arraySep, GetOptException;
 import std.range : empty;
 import std.sumtype : isSumType, SumType, match;
@@ -269,7 +270,15 @@ static positionals(T)(ref T t, ref string[] args)
             mixin(`auto opts = tuple("positional",` ~ `&t.` ~ positional.stringof ~ ");");
 
             arraySep = ",";
-            getopt(args, config.caseSensitive, config.required, opts.expand);
+
+            try
+            {
+                getopt(args, config.caseSensitive, config.required, opts.expand);
+            }
+            catch (GetOptException err)
+            {
+                throw new GetOptException(format!"Missing value for argument [%s]"(positionalValue!positional));
+            }
         }
     }
 }
