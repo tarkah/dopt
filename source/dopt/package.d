@@ -36,20 +36,20 @@ unittest
         }
     }
 
-    @Command()
+    @Command() @Help("Build the app")
     struct Build
     {
         @Option() @Long() @Short()
         int jobs;
-        @Positional("PATH...") @Required()
+        @Positional("path") @Required()
         string[] paths;
     }
 
-    @Command("tst")
+    @Command("tst") @Help("Run tests")
     struct Test
     {
-        @Option() @Long() @Short() @Required() @Parse!Profile(&parseProfile) Profile profile = Profile
-            .Debug;
+        @Option() @Long() @Short() @Required()
+        @Parse!Profile(&parseProfile) Profile profile = Profile.Debug;
         @Positional() @Required()
         string path;
     }
@@ -91,9 +91,12 @@ unittest
     args = ["example", "-d", "build", "-x", "9", "/usr",];
     assertThrown!UsageException(parse!Example(args));
 
+    args = ["example", "tst", "/asdf"];
+    assertThrown!UsageException(parse!Example(args));
+
     args = ["example", "-h",];
     assertThrown!HelpException(parse!Example(args));
 
-    args = ["example", "tst", "-h",];
+    args = ["example", "build", "-h",];
     assertThrown!HelpException(parse!Example(args));
 }

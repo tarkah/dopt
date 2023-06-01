@@ -85,13 +85,27 @@ package static string helpValue(alias T)()
     }
 }
 
+package static string versionValue(alias T)()
+{
+    alias uda = getUDAs!(T, Version);
+
+    static if (uda.length > 0)
+    {
+        return uda[0].value.empty ? "" : uda[0].value;
+    }
+    else
+    {
+        return "";
+    }
+}
+
 package static string positionalValue(alias T)()
 {
     alias uda = getUDAs!(T, Positional);
 
     static if (uda.length > 0)
     {
-        return uda[0].value.empty ? T.stringof.toUpper : uda[0].value;
+        return uda[0].value.empty ? T.stringof.toLower : uda[0].value;
     }
     else
     {

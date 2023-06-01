@@ -1,8 +1,7 @@
 module dopt.meta;
 
-import std.stdio : writeln;
 import std.sumtype : isSumType;
-import std.traits : getSymbolsByUDA;
+import std.traits : getSymbolsByUDA, isBoolean, isArray, isSomeString;
 import std.typecons : Nullable, nullable;
 
 import uda = dopt.uda;
@@ -11,6 +10,7 @@ struct Command
 {
     string name;
     string help;
+    string _version;
 
     string[] path;
 
@@ -26,6 +26,14 @@ struct Positional
     string name;
     bool required;
     string help;
+    bool isArray;
+}
+
+enum Value
+{
+    Bool,
+    Array,
+    Other,
 }
 
 struct Option
@@ -34,6 +42,7 @@ struct Option
     string _short;
     bool required;
     string help;
+    Value value;
 }
 
 struct Global
@@ -42,6 +51,7 @@ struct Global
     string _short;
     bool required;
     string help;
+    Value value;
 }
 
 // TODO: Static assert global & option have long and/or short UDA set
@@ -50,6 +60,7 @@ static Command build(T)(Nullable!Command parent)
     Command cmd = Command.init;
     cmd.name = uda.commandValue!T;
     cmd.help = uda.helpValue!T;
+    cmd._version = uda.versionValue!T;
 
     cmd.globals = parent.isNull ? [] : parent.get.globals;
     cmd.path = parent.isNull ? [cmd.name] : parent.get.path ~ cmd.name;
@@ -94,34 +105,15 @@ Nullable!Command find(Command cmd, string[] path)
     return Nullable!Command.init;
 }
 
-void printHelp(T)(string[] path)
-{
-    auto root = build!(T)(Nullable!Command.init);
-
-    // null should be unreachable
-    auto cmd = find(root, path);
-
-    writeln(cmd);
-}
-
-void printUsage(T)(string[] path, string error)
-{
-    auto root = build!(T)(Nullable!Command.init);
-
-    // null should be unreachable
-    auto cmd = find(root, path);
-
-    writeln(error);
-}
-
 static Global global(alias arg)()
 {
     static _long = uda.longValue!(arg);
     static _short = uda.shortValue!(arg);
     static required = uda.requiredValue!(arg);
     static help = uda.helpValue!(arg);
+    static value = value!(arg);
 
-    return Global(_long, _short, required, help);
+    return Global(_long, _short, required, help, value);
 }
 
 static Option option(alias arg)()
@@ -130,8 +122,25 @@ static Option option(alias arg)()
     static _short = uda.shortValue!(arg);
     static required = uda.requiredValue!(arg);
     static help = uda.helpValue!(arg);
+    static value = value!(arg);
 
-    return Option(_long, _short, required, help);
+    return Option(_long, _short, required, help, value);
+}
+
+static Value value(alias arg)()
+{
+    static if (isBoolean!(typeof(arg)))
+    {
+        return Value.Bool;
+    }
+    else static if (isNonStrArray!(typeof(arg)))
+    {
+        return Value.Array;
+    }
+    else
+    {
+        return Value.Other;
+    }
 }
 
 static Positional positional(alias arg)()
@@ -139,8 +148,9 @@ static Positional positional(alias arg)()
     static name = uda.positionalValue!(arg);
     static required = uda.requiredValue!(arg);
     static help = uda.helpValue!(arg);
+    static isArray = isNonStrArray!(typeof(arg));
 
-    return Positional(name, required, help);
+    return Positional(name, required, help, isArray);
 }
 
 static Command[] subcommands(T)(Command cmd)
@@ -163,4 +173,9 @@ static Command[] subcommands(T)(Command cmd)
     }
 
     return cmds;
+}
+
+static bool isNonStrArray(T)()
+{
+    return isArray!T && !isSomeString!T;
 }

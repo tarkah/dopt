@@ -1,18 +1,17 @@
 module dopt.parse;
 
-import std.algorithm : findSplitBefore;
+import std.algorithm : findSplitBefore, filter, each;
 import std.conv : text, ConvException;
 import std.exception : basicExceptionCtors;
 import std.getopt : getopt, config, arraySep, GetOptException;
 import std.range : empty;
-import std.stdio : writeln;
 import std.sumtype : isSumType, SumType, match;
 import std.traits : getSymbolsByUDA, getUDAs;
 import std.typecons : tuple, Nullable, nullable;
 import std.uni : toLower;
 
 import dopt.uda;
-import meta = dopt.meta;
+import dopt.format : printHelp, printUsage;
 
 struct Help
 {
@@ -44,11 +43,11 @@ static T parse(T)(ref string[] args)
     auto result = parseArgs!(T)(args, []);
 
     T function(Help) onHelp = (help) {
-        meta.printHelp!T(help.path);
+        printHelp!T(help.path);
         throw new HelpException("help printed");
     };
     T function(Error) onError = (error) {
-        meta.printUsage!T(error.path, error.msg);
+        printUsage!T(error.path, error.msg);
         throw new UsageException("usage printed");
     };
 
@@ -64,14 +63,14 @@ static Result!T parseArgs(T)(ref string[] args, string[] inPath)
     try
     {
         // Globals
-        bool help = globals!(T)(t, args);
+        globals!(T)(t, args);
+
+        // Options 
+        bool help = options!(T)(t, args);
         if (help)
         {
             return Result!T(Help(path));
         }
-
-        // Options 
-        options!(T)(t, args);
 
         // Subcommand
         auto withSub = subcommand!(T)(t, args, path);
@@ -183,20 +182,24 @@ template escaped(alias s)
     enum escaped = `"` ~ s ~ `"`;
 }
 
-static bool globals(T)(ref T t, ref string[] args)
+static globals(T)(ref T t, ref string[] args)
 {
     if (args.length > 1)
     {
         mixin setupOptCallbacks!T;
         mixin("auto opts = " ~ genOpts!(T, true) ~ ";");
 
+        // Prevent help from getting captured at this level
+        args.filter!(a => a == "-h" || a == "--help")
+            .each!((ref a) => a = a ~ "~");
+
         arraySep = ",";
-        auto result = getopt(args, config.caseSensitive, config.passThrough, opts.expand);
+        getopt(args, config.caseSensitive, config.passThrough, opts.expand);
 
-        return result.helpWanted;
+        // Restore help flags
+        args.filter!(a => a == "-h~" || a == "--help~")
+            .each!((ref a) => a = a[0 .. $ - 1]);
     }
-
-    return false;
 }
 
 static options(T)(ref T t, ref string[] args)
@@ -211,10 +214,14 @@ static options(T)(ref T t, ref string[] args)
         auto target = args[0 .. end];
 
         arraySep = ",";
-        getopt(target, config.caseSensitive, config.noPassThrough, opts.expand);
+        auto result = getopt(target, config.caseSensitive, config.noPassThrough, opts.expand);
 
         args = target ~ args[end .. $];
+
+        return result.helpWanted;
     }
+
+    return false;
 }
 
 static positionals(T)(ref T t, ref string[] args)
