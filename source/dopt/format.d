@@ -39,6 +39,13 @@ void printHelp(T)(string[] path)
     printPositionals(cmd.positionals, maxLeft);
 }
 
+void printVersion(T)()
+{
+    Command root = build!(T)(Nullable!Command.init);
+
+    writeln(format!"%s %s"(root.name, root._version));
+}
+
 void printUsage(T)(string[] path, string error)
 {
     auto root = build!(T)(Nullable!Command.init);
@@ -105,7 +112,6 @@ private void printFlags(Option[] _opts, Global[] _globals, ulong maxLeft)
         writeln("\t", format!"%*s"(maxLeft, fmtLeft(global)), "   ", global.help);
     }
 }
-
 
 private void printOptions(Option[] _opts, Global[] _globals, ulong maxLeft)
 {

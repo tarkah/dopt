@@ -11,11 +11,15 @@ import std.typecons : tuple, Nullable, nullable;
 import std.uni : toLower;
 
 import dopt.uda;
-import dopt.format : printHelp, printUsage;
+import dopt.format : printHelp, printUsage, printVersion;
 
 struct Help
 {
     string[] path;
+}
+
+struct Version
+{
 }
 
 struct Error
@@ -24,7 +28,20 @@ struct Error
     string msg;
 }
 
+enum BuiltinFlag
+{
+    None,
+    Help,
+    Version,
+}
+
 class HelpException : Exception
+{
+    ///
+    mixin basicExceptionCtors;
+}
+
+class VersionException : Exception
 {
     ///
     mixin basicExceptionCtors;
@@ -36,7 +53,7 @@ class UsageException : Exception
     mixin basicExceptionCtors;
 }
 
-alias Result(T) = SumType!(T, Help, Error);
+alias Result(T) = SumType!(T, Help, Version, Error);
 
 static T parse(T)(ref string[] args)
 {
@@ -46,12 +63,16 @@ static T parse(T)(ref string[] args)
         printHelp!T(help.path);
         throw new HelpException("help printed");
     };
+    T function(Version) onVersion = (_version) {
+        printVersion!T;
+        throw new VersionException("version printed");
+    };
     T function(Error) onError = (error) {
         printUsage!T(error.path, error.msg);
         throw new UsageException("usage printed");
     };
 
-    return result.match!((T t) => t, onHelp, onError);
+    return result.match!((T t) => t, onHelp, onVersion, onError);
 }
 
 static Result!T parseArgs(T)(ref string[] args, string[] inPath)
@@ -66,10 +87,16 @@ static Result!T parseArgs(T)(ref string[] args, string[] inPath)
         globals!(T)(t, args);
 
         // Options 
-        bool help = options!(T)(t, args);
-        if (help)
+        auto builtin = options!(T)(t, args);
+
+        // Return if help or version passed
+        if (builtin == BuiltinFlag.Help)
         {
             return Result!T(Help(path));
+        }
+        else if (builtin == BuiltinFlag.Version)
+        {
+            return Result!T(Version());
         }
 
         // Subcommand
@@ -202,12 +229,14 @@ static globals(T)(ref T t, ref string[] args)
     }
 }
 
-static options(T)(ref T t, ref string[] args)
+static BuiltinFlag options(T)(ref T t, ref string[] args)
 {
     if (args.length > 1)
     {
+        bool _version = false;
+
         mixin setupOptCallbacks!T;
-        mixin("auto opts = " ~ genOpts!(T, false) ~ ";");
+        mixin("auto opts = " ~ genOpts!(T, false) ~ `~ tuple("version|V", &_version);`);
 
         ulong cmdPos = subcommandPosition!(T)(args);
         ulong end = cmdPos > 0 ? cmdPos : args.length;
@@ -218,10 +247,15 @@ static options(T)(ref T t, ref string[] args)
 
         args = target ~ args[end .. $];
 
-        return result.helpWanted;
+        if (result.helpWanted)
+        {
+            return BuiltinFlag.Help;
+        } else if (_version) {
+            return BuiltinFlag.Version;
+        }
     }
 
-    return false;
+    return BuiltinFlag.None;
 }
 
 static positionals(T)(ref T t, ref string[] args)
@@ -273,9 +307,10 @@ static Nullable!(Result!T) subcommand(T)(ref T t, ref string[] args, string[] pa
                                 return Result!T(t).nullable;
                             };
                             auto mapHelp = (Help help) => Result!T(help).nullable;
+                            auto mapVersion = (Version _version) => Result!T(_version).nullable;
                             auto mapError = (Error error) => Result!T(error).nullable;
 
-                            return result.match!(mapSub, mapHelp, mapError);
+                            return result.match!(mapSub, mapHelp, mapVersion, mapError);
                         }
                     }
                 }

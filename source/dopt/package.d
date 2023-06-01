@@ -1,7 +1,7 @@
 module dopt;
 
 public import dopt.uda;
-public import dopt.parse : parse, HelpException, UsageException;
+public import dopt.parse : parse, HelpException, UsageException, VersionException;
 
 unittest
 {
@@ -99,4 +99,10 @@ unittest
 
     args = ["example", "build", "-h",];
     assertThrown!HelpException(parse!Example(args));
+
+    args = ["example", "--version",];
+    assertThrown!VersionException(parse!Example(args));
+
+    args = ["example", "build", "-V",];
+    assertThrown!VersionException(parse!Example(args));
 }
