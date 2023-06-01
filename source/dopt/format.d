@@ -9,6 +9,8 @@ import std.typecons : Nullable;
 
 import dopt.meta;
 
+const SPACE = "  ";
+
 void printHelp(T)(string[] path)
 {
     Command root = build!(T)(Nullable!Command.init);
@@ -87,7 +89,7 @@ private void printSubcommands(Command[] subcommands, ulong maxLeft)
 
         foreach (cmd; subcommands)
         {
-            writeln("\t", format!`%*s`(maxLeft, cmd.name), "   ", cmd.help);
+            writeln(SPACE, format!`%*s`(maxLeft, cmd.name), SPACE, cmd.help);
         }
     }
 }
@@ -105,11 +107,11 @@ private void printFlags(Option[] _opts, Global[] _globals, ulong maxLeft)
 
     foreach (opt; opts)
     {
-        writeln("\t", format!"%*s"(maxLeft, fmtLeft(opt)), "   ", opt.help);
+        writeln(SPACE, format!"%*s"(maxLeft, fmtLeft(opt)), SPACE, opt.help);
     }
     foreach (global; globals)
     {
-        writeln("\t", format!"%*s"(maxLeft, fmtLeft(global)), "   ", global.help);
+        writeln(SPACE, format!"%*s"(maxLeft, fmtLeft(global)), SPACE, global.help);
     }
 }
 
@@ -125,11 +127,11 @@ private void printOptions(Option[] _opts, Global[] _globals, ulong maxLeft)
 
         foreach (opt; opts)
         {
-            writeln("\t", format!"%*s"(maxLeft, fmtLeft(opt)), "   ", opt.help);
+            writeln(SPACE, format!"%*s"(maxLeft, fmtLeft(opt)), SPACE, opt.help);
         }
         foreach (global; globals)
         {
-            writeln("\t", format!"%*s"(maxLeft, fmtLeft(global)), "   ", global.help);
+            writeln(SPACE, format!"%*s"(maxLeft, fmtLeft(global)), SPACE, global.help);
         }
     }
 }
@@ -144,7 +146,7 @@ private void printPositionals(Positional[] positionals, ulong maxLeft)
 
         foreach (positional; positionals)
         {
-            writeln("\t", format!"%*s"(maxLeft, fmtLeft(positional)), "   ", positional.help);
+            writeln(SPACE, format!"%*s"(maxLeft, fmtLeft(positional)), SPACE, positional.help);
         }
     }
 }
