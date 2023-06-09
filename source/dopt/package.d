@@ -55,7 +55,7 @@ unittest
         string path;
     }
 
-    alias ExampleSubcommand = SumType!(Build, Test);
+    alias Subcommands = SumType!(Build, Test);
 
     @Command() @Help("Example app help...") @Version("0.1.0")
     struct Example
@@ -67,7 +67,7 @@ unittest
         @Global() @Long() @Short() @Help("Path to the configuration file")
         string config;
         @Subcommand()
-        ExampleSubcommand subcommand;
+        Subcommands subcmd;
     }
 
     auto _meta = meta.build!Example(Nullable!(meta.Command).init);

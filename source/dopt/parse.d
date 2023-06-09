@@ -302,7 +302,6 @@ static Nullable!(Result!T) subcommand(T)(ref T t, ref string[] args, string[] pa
         {
             static foreach (member; sub.Types)
             {
-
                 {
                     static cmd = commandValue!member;
 
@@ -315,7 +314,7 @@ static Nullable!(Result!T) subcommand(T)(ref T t, ref string[] args, string[] pa
                             auto result = parseArgs!member(args, path);
 
                             auto mapSub = (member subcmd) {
-                                t.subcommand = subcmd;
+                                mixin("t." ~ sub.stringof ~ " = subcmd;");
                                 return Result!T(t).nullable;
                             };
                             auto mapHelp = (Help help) => Result!T(help).nullable;
