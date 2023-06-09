@@ -73,7 +73,7 @@ unittest
     auto _meta = meta.build!Example(Nullable!(meta.Command).init);
     writeln(_meta);
 
-    auto args = ["example", "-d", "--verbose",];
+    auto args = ["example", "-d", "--verbose", "build", "/usr"];
     auto example = parse!Example(args);
     writeln(example);
 

@@ -248,7 +248,7 @@ static positionals(T)(ref T t, ref string[] args)
         // TODO: Handle optional positional args, currently they are always required
         static if (isNonStrArray!(typeof(positional)))
         {
-            if (args[1 .. $].length > 1)
+            if (args[1 .. $].length > 0)
             {
                 // Safe to assume positional array is always last? (at least for now while
                 // we assume space separated values)
