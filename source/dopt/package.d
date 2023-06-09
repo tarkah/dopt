@@ -1,7 +1,8 @@
 module dopt;
 
+public import dopt.exception : DoptException, HelpException, UsageException, VersionException;
+public import dopt.parse : parse;
 public import dopt.uda;
-public import dopt.parse : parse, HelpException, UsageException, VersionException;
 
 unittest
 {

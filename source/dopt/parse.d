@@ -2,7 +2,6 @@ module dopt.parse;
 
 import std.algorithm : findSplitBefore, filter, each;
 import std.conv : text, ConvException;
-import std.exception : basicExceptionCtors;
 import std.format : format;
 import std.getopt : getopt, config, arraySep, GetOptException;
 import std.range : empty, enumerate;
@@ -11,9 +10,10 @@ import std.traits : getSymbolsByUDA, getUDAs;
 import std.typecons : tuple, Nullable, nullable;
 import std.uni : toLower;
 
-import dopt.uda;
+import dopt.exception : HelpException, UsageException, VersionException;
 import dopt.format : printHelp, printUsage, printVersion;
 import dopt.meta : isNonStrArray;
+import dopt.uda;
 
 struct Help
 {
@@ -35,24 +35,6 @@ enum BuiltinFlag
     None,
     Help,
     Version,
-}
-
-class HelpException : Exception
-{
-    ///
-    mixin basicExceptionCtors;
-}
-
-class VersionException : Exception
-{
-    ///
-    mixin basicExceptionCtors;
-}
-
-class UsageException : Exception
-{
-    ///
-    mixin basicExceptionCtors;
 }
 
 alias Result(T) = SumType!(T, Help, Version, Error);
