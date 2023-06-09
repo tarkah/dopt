@@ -75,17 +75,9 @@ int main(string[] args)
     {
         cli = parse!Example(args);
     }
-    catch (HelpException e)
+    catch (DoptException e)
     {
-        return 0;
-    }
-    catch (VersionException e)
-    {
-        return 0;
-    }
-    catch (Exception e)
-    {
-        return 1;
+        return e.isUsage;
     }
 
     writeln(cli);

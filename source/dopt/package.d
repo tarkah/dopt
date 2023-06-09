@@ -1,7 +1,8 @@
 module dopt;
 
+public import dopt.exception : DoptException, HelpException, UsageException, VersionException;
+public import dopt.parse : parse;
 public import dopt.uda;
-public import dopt.parse : parse, HelpException, UsageException, VersionException;
 
 unittest
 {
@@ -72,7 +73,7 @@ unittest
     auto _meta = meta.build!Example(Nullable!(meta.Command).init);
     writeln(_meta);
 
-    auto args = ["example", "-d", "--verbose",];
+    auto args = ["example", "-d", "--verbose", "build", "/usr"];
     auto example = parse!Example(args);
     writeln(example);
 
