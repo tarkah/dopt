@@ -1,6 +1,6 @@
 module dopt.parse;
 
-import std.algorithm : findSplitBefore, filter, each;
+import std.algorithm : findSplitBefore, filter, each, countUntil;
 import std.array : array;
 import std.conv : text, ConvException;
 import std.format : format;
@@ -277,14 +277,18 @@ static positionals(T)(ref T t, ref string[] args)
         {
             try
             {
+                auto nonEndPos = args[1 .. $].countUntil!(s => s != "--") + 1;
+
                 // Hacky solution to support positionals w/ getopt =P
-                args = [args[0]] ~ "--positional" ~ args[1 .. $];
+                auto posArg = [args[0]] ~ "--positional" ~ args[nonEndPos .. nonEndPos + 1];
 
                 mixin(`auto opts = tuple("positional",` ~ `&t.` ~ positional.stringof ~ ");");
 
                 arraySep = ",";
 
-                getopt(args, config.caseSensitive, config.required, opts.expand);
+                getopt(posArg, config.caseSensitive, config.required, opts.expand);
+
+                args = args[0 .. nonEndPos] ~ args[nonEndPos + 1 .. $];
             }
             catch (GetOptException err)
             {
