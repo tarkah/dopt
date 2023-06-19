@@ -1,6 +1,7 @@
 module dopt.parse;
 
-import std.algorithm : findSplitBefore, filter, each;
+import std.algorithm : findSplitBefore, filter, each, countUntil;
+import std.array : array;
 import std.conv : text, ConvException;
 import std.format : format;
 import std.getopt : getopt, config, arraySep, GetOptException;
@@ -205,7 +206,8 @@ static globals(T)(ref T t, ref string[] args)
             .each!((ref a) => a = a ~ "~");
 
         arraySep = ",";
-        getopt(args, config.caseSensitive, config.passThrough, opts.expand);
+        getopt(args, config.keepEndOfOptions, config.caseSensitive,
+                config.passThrough, opts.expand);
 
         // Restore help flags
         args.filter!(a => a == "-h~" || a == "--help~")
@@ -225,7 +227,8 @@ static BuiltinFlag options(T)(ref T t, ref string[] args)
     auto target = args[0 .. end];
 
     arraySep = ",";
-    auto result = getopt(target, config.caseSensitive, config.noPassThrough, opts.expand);
+    auto result = getopt(target, config.keepEndOfOptions, config.caseSensitive,
+            config.noPassThrough, opts.expand);
 
     args = target ~ args[end .. $];
 
@@ -248,6 +251,8 @@ static positionals(T)(ref T t, ref string[] args)
         // TODO: Handle optional positional args, currently they are always required
         static if (isNonStrArray!(typeof(positional)))
         {
+            args = args.filter!(s => s != "--").array;
+
             if (args[1 .. $].length > 0)
             {
                 // Safe to assume positional array is always last? (at least for now while
@@ -272,14 +277,23 @@ static positionals(T)(ref T t, ref string[] args)
         {
             try
             {
+                auto nonEndPos = args[1 .. $].countUntil!(s => s != "--") + 1;
+
+                if (nonEndPos == 0)
+                {
+                    throw new GetOptException("");
+                }
+
                 // Hacky solution to support positionals w/ getopt =P
-                args = [args[0]] ~ "--positional" ~ args[1 .. $];
+                auto posArg = [args[0]] ~ "--positional" ~ args[nonEndPos .. nonEndPos + 1];
 
                 mixin(`auto opts = tuple("positional",` ~ `&t.` ~ positional.stringof ~ ");");
 
                 arraySep = ",";
 
-                getopt(args, config.caseSensitive, config.required, opts.expand);
+                getopt(posArg, config.caseSensitive, config.required, opts.expand);
+
+                args = args[0 .. nonEndPos] ~ args[nonEndPos + 1 .. $];
             }
             catch (GetOptException err)
             {
