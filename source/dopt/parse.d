@@ -279,6 +279,11 @@ static positionals(T)(ref T t, ref string[] args)
             {
                 auto nonEndPos = args[1 .. $].countUntil!(s => s != "--") + 1;
 
+                if (nonEndPos == 0)
+                {
+                    throw new GetOptException("");
+                }
+
                 // Hacky solution to support positionals w/ getopt =P
                 auto posArg = [args[0]] ~ "--positional" ~ args[nonEndPos .. nonEndPos + 1];
 
