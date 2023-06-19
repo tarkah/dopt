@@ -206,7 +206,8 @@ static globals(T)(ref T t, ref string[] args)
             .each!((ref a) => a = a ~ "~");
 
         arraySep = ",";
-        getopt(args, config.keepEndOfOptions, config.caseSensitive, config.passThrough, opts.expand);
+        getopt(args, config.keepEndOfOptions, config.caseSensitive,
+                config.passThrough, opts.expand);
 
         // Restore help flags
         args.filter!(a => a == "-h~" || a == "--help~")
@@ -226,7 +227,8 @@ static BuiltinFlag options(T)(ref T t, ref string[] args)
     auto target = args[0 .. end];
 
     arraySep = ",";
-    auto result = getopt(target, config.keepEndOfOptions, config.caseSensitive, config.noPassThrough, opts.expand);
+    auto result = getopt(target, config.keepEndOfOptions, config.caseSensitive,
+            config.noPassThrough, opts.expand);
 
     args = target ~ args[end .. $];
 
@@ -244,13 +246,13 @@ static BuiltinFlag options(T)(ref T t, ref string[] args)
 
 static positionals(T)(ref T t, ref string[] args)
 {
-    args = args.filter!(s => s != "--").array;
-
     static foreach (positional; getSymbolsByUDA!(T, Positional))
     {
         // TODO: Handle optional positional args, currently they are always required
         static if (isNonStrArray!(typeof(positional)))
         {
+            args = args.filter!(s => s != "--").array;
+
             if (args[1 .. $].length > 0)
             {
                 // Safe to assume positional array is always last? (at least for now while
