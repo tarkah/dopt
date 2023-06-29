@@ -153,9 +153,12 @@ static string[] aliasValues(alias T)()
 
     static if (udas.length > 0)
     {
-        static string[] parsed;
-        static foreach(uda; udas) {
-            static if (!uda.value.empty) {
+        string[] parsed;
+
+        static foreach (uda; udas)
+        {
+            static if (!uda.value.empty)
+            {
                 parsed = parsed ~ uda.value;
             }
         }
