@@ -83,6 +83,8 @@ struct Install
     string[] dependencies;
 }
 
+// WARNING: Subcommands cannot be named "Subcommand" as that
+// collides w/ the @Subcommand UDA.
 alias ExampleSubcommand = SumType!(Build, Test, Install);
 
 @Command("example") @Help("dopt example app") @Version("0.1.0")

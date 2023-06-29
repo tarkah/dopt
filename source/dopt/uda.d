@@ -10,6 +10,21 @@ struct Command
     string value;
 }
 
+/**
+ Mark a field as as subcommand. The field must be a sumtype value.
+
+ ```d
+ // WARNING: Subcommands cannot be named "Subcommand" as that
+ // collides w/ the @Subcommand UDA.
+ alias Subcmd = SumType!(CmdA, CmdB);
+
+ @Command()
+ struct App {
+     @Subcommand()
+     Subcmd subcmd;
+ }
+ ```
+*/
 struct Subcommand
 {
 }
