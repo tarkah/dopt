@@ -114,33 +114,12 @@ unittest
     import std.conv : ConvException;
     import std.exception;
     import std.format : format;
-    import std.functional : toDelegate;
     import std.stdio;
     import std.sumtype;
     import std.typecons;
 
     import dopt.uda;
     import meta = dopt.meta;
-
-    enum Profile
-    {
-        Debug,
-        Release,
-    }
-
-    static Profile parseProfile(string s)
-    {
-        switch (s)
-        {
-        case "debug":
-            return Profile.Debug;
-        case "release":
-            return Profile.Release;
-        default:
-            throw new ConvException(
-                    format!"%s is not a valid profile. Valid values are: debug, release"(s));
-        }
-    }
 
     @Command() @Alias("nt") @Help("This")
     struct This
