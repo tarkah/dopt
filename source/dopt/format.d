@@ -69,12 +69,11 @@ private string usage(Command cmd)
 
     if (cmd.subcommands.length > 0)
     {
-        return `usage: %s [command]`.format(path);
+        return `usage: %s <command>`.format(path);
     }
     else
     {
-        auto positionals = cmd.positionals.map!(p => format!"[%s]%s"(p.name,
-                p.isArray ? "..." : "")).join(" ");
+        auto positionals = cmd.positionals.map!(p => fmtArg(p, p.required)).join(" ");
 
         return `usage: %s %s`.format(path, positionals);
     }
@@ -181,6 +180,43 @@ string fmtCommandName(Command cmd)
     }
 }
 
+string fmtArg(T)(T item, bool required)
+{
+    if (required)
+    {
+        return format!"<%s>"(fmtArray(item));
+    }
+    else
+    {
+        return format!"[%s]"(fmtArray(item));
+    }
+}
+
+string fmtArray(T)(T item)
+{
+    static if (is(T : Positional))
+    {
+        if (item.isArray)
+        {
+            return format!"%s..."(fmtName(item));
+        }
+    }
+
+    return fmtName(item);
+}
+
+string fmtName(T)(T item)
+{
+    static if (is(T : Positional))
+    {
+        return item.name;
+    }
+    else
+    {
+        return item._long;
+    }
+}
+
 string fmtLeft(T)(T item)
 {
     static if (is(T : Command))
@@ -189,14 +225,7 @@ string fmtLeft(T)(T item)
     }
     else static if (is(T : Positional))
     {
-        if (item.isArray)
-        {
-            return format!"[%s]..."(item.name);
-        }
-        else
-        {
-            return format!"[%s]"(item.name);
-        }
+        return fmtArg(item, item.required);
     }
     else
     {
@@ -213,15 +242,13 @@ string fmtLeft(T)(T item)
         }
         else
         {
-            auto arrayChars = (item.value == Value.Array) ? "..." : "";
-
             if (item._short.length > 0)
             {
-                return format!"-%s,--%s [%s]%s"(item._short, item._long, item._long, arrayChars);
+                return format!"-%s,--%s %s"(item._short, item._long, fmtArg(item, true));
             }
             else
             {
-                return format!"--%s [%s]%s"(item._long, item._long, arrayChars);
+                return format!"--%s %s"(item._long, fmtArg(item, true));
             }
         }
     }

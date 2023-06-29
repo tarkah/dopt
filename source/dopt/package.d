@@ -76,17 +76,21 @@ unittest
     auto args = ["example", "-d", "--verbose", "build", "/usr"];
     auto example = parse!Example(args);
     writeln(example);
+    assert(example == Example(true, true, "", Subcommands(Build(0, ["/usr"]))));
 
     args = [
         "example", "tst", "--profile", "release", "/usr/", "-d", "--verbose"
     ];
     example = parse!Example(args);
+    assert(example == Example(true, true, "", Subcommands(Test(Profile.Release, "/usr/"))));
     writeln(example);
 
     args = [
         "example", "build", "-j", "8", "/usr,/home,/etc", "-c", "/etc/test.conf",
     ];
     example = parse!Example(args);
+    assert(example == Example(false, false, "/etc/test.conf",
+            Subcommands(Build(8, ["/usr,/home,/etc"]))));
     writeln(example);
 
     args = ["example", "-d", "build", "-x", "9", "/usr",];
@@ -174,4 +178,70 @@ unittest
     nested = parse!Example(args);
     writeln(nested);
     assert(expanded == nested);
+}
+
+unittest
+{
+    import std.exception;
+
+    import dopt.uda;
+    import meta = dopt.meta;
+
+    string[] args;
+
+    @Command()
+    struct A
+    {
+        @Positional()
+        string a;
+        @Positional() @Required()
+        string b;
+        @Positional()
+        int[] c;
+    }
+
+    args = ["test", "b"];
+    assert(parse!A(args) == A("", "b", []));
+
+    args = ["test", "a", "b"];
+    assert(parse!A(args) == A("a", "b", []));
+
+    args = ["test", "a", "b", "1", "2", "3"];
+    assert(parse!A(args) == A("a", "b", [1, 2, 3]));
+
+    args = ["test", "a", "b", "c"];
+    assertThrown!UsageException(parse!A(args));
+
+    @Command()
+    struct B
+    {
+        @Positional() @Required()
+        string a;
+        @Positional() @Required()
+        string[] b;
+    }
+
+    args = ["test", "a", "b"];
+    assert(parse!B(args) == B("a", ["b"]));
+
+    args = ["test", "a"];
+    assertThrown!UsageException(parse!B(args));
+
+    @Command()
+    struct C
+    {
+        @Positional()
+        string a;
+        @Positional()
+        string[] b;
+    }
+
+    args = ["test", "a", "b", "c"];
+    assert(parse!C(args) == C("a", ["b", "c"]));
+
+    args = ["test", "a"];
+    assert(parse!C(args) == C("a", []));
+
+    args = ["test"];
+    assert(parse!C(args) == C("", []));
 }
