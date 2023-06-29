@@ -95,7 +95,7 @@ static string[][string] aliasMap(T)()
     {
         foreach (_alias; cmd.aliases)
         {
-            map[_alias] = cmd.path[1..$];
+            map[_alias] = cmd.path[1 .. $];
         }
 
         foreach (subcmd; cmd.subcommands)

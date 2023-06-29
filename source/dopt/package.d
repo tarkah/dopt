@@ -182,7 +182,6 @@ unittest
     auto args = ["example", "nested", "-h"];
     assertThrown!HelpException(parse!Example(args));
 
-    
     args = ["example", "nested", "this"];
     auto expanded = parse!Example(args);
     args = ["example", "nt"];
