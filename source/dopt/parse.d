@@ -1,6 +1,6 @@
 module dopt.parse;
 
-import std.algorithm : findSplit, findSplitBefore, filter, each, countUntil;
+import std.algorithm : findSplit, findSplitBefore, filter, each, countUntil, count;
 import std.array : array;
 import std.conv : text, ConvException;
 import std.format : format;
@@ -110,7 +110,7 @@ static Result!T parseArgs(T)(ref string[] args, string[] inPath)
             return withSub.get;
         }
 
-        // Positionals 
+        // Positionals
         positionals!(T)(t, args);
     }
     catch (GetOptException err)
@@ -265,54 +265,131 @@ static BuiltinFlag options(T)(ref T t, ref string[] args)
 
 static positionals(T)(ref T t, ref string[] args)
 {
-    static foreach (positional; getSymbolsByUDA!(T, Positional))
+
+    // Statically count how many required fields
+    template countRequired(Fields...)
     {
-        // TODO: Handle optional positional args, currently they are always required
-        static if (isNonStrArray!(typeof(positional)))
+        static if (Fields.length > 0)
         {
-            args = args.filter!(s => s != "--").array;
-
-            if (args[1 .. $].length > 0)
+            static if (requiredValue!(Fields[0]))
             {
-                // Safe to assume positional array is always last? (at least for now while
-                // we assume space separated values)
-                mixin(`t.` ~ positional.stringof ~ `.length = args[1 .. $].length;`);
-
-                args[1 .. $].enumerate().each!((i, arg) {
-                    auto _args = [args[0], "--positional", arg];
-
-                    mixin(`auto opts = tuple("positional",` ~ `&t.` ~ positional.stringof ~ "[i]);");
-
-                    getopt(_args, config.caseSensitive, config.required, opts.expand);
-                });
+                enum countRequired = 1 + countRequired!(Fields[1 .. $]);
             }
             else
             {
-                throw new GetOptException(format!"Missing values for argument [%s]..."(
-                        positionalValue!positional));
+                enum countRequired = countRequired!(Fields[1 .. $]);
             }
         }
         else
         {
+            enum countRequired = 0;
+        }
+    }
+
+    // Statically check if required array exists
+    template requiredArrayExists(Fields...)
+    {
+        static if (Fields.length > 0)
+        {
+            static if (requiredValue!(Fields[0]) && isNonStrArray!(typeof(Fields[0])))
+            {
+                enum requiredArrayExists = true;
+            }
+            else
+            {
+                enum requiredArrayExists = requiredArrayExists!(Fields[1 .. $]);
+            }
+        }
+        else
+        {
+            enum requiredArrayExists = false;
+        }
+    }
+
+    // Compute stats around required fields
+    alias positionals = getSymbolsByUDA!(T, Positional);
+    alias numRequired = countRequired!positionals;
+    alias hasRequiredArray = requiredArrayExists!positionals;
+
+    // Assert no optional fields exist if there is a required array
+    static if (hasRequiredArray && positionals.length - numRequired > 0)
+    {
+        static assert(0,
+                "Optional positional field is not allows if a required array positional field exists.");
+    }
+
+    // Determine how many optional fields we are allowed to parse
+    // If required array we can't support options
+    // else # args - # required
+    int optRemaining = hasRequiredArray ? 0 : cast(int) args[1 .. $].filter!(s => s != "--")
+        .count - numRequired;
+
+    static foreach (positional; getSymbolsByUDA!(T, Positional))
+    {
+        // If array, we exhaust the remaining args into it
+        static if (isNonStrArray!(typeof(positional)))
+        {
+            {
+                alias required = requiredValue!positional;
+
+                args = args.filter!(s => s != "--").array;
+
+                if (args[1 .. $].length > 0)
+                {
+                    mixin(`t.` ~ positional.stringof ~ `.length = args[1 .. $].length;`);
+
+                    args[1 .. $].enumerate().each!((i, arg) {
+                        auto _args = [args[0], "--positional", arg];
+
+                        mixin(
+                            `auto opts = tuple("positional",` ~ `&t.` ~ positional.stringof
+                            ~ "[i]);");
+
+                        getopt(_args, config.caseSensitive, config.required, opts.expand);
+                    });
+                }
+                else if (required)
+                {
+                    throw new GetOptException(format!"Missing values for argument [%s]..."(
+                            positionalValue!positional));
+                }
+            }
+        }
+        // Otherwise parse them one at a time
+        else
+        {
             try
             {
+                alias required = requiredValue!positional;
+
                 auto nonEndPos = args[1 .. $].countUntil!(s => s != "--") + 1;
 
+                // No arg exists, error if required else continue
                 if (nonEndPos == 0)
                 {
-                    throw new GetOptException("");
+                    if (required)
+                    {
+                        throw new GetOptException("");
+                    }
                 }
+                else if (required || optRemaining > 0)
+                {
+                    if (!required)
+                    {
+                        optRemaining -= 1;
+                    }
 
-                // Hacky solution to support positionals w/ getopt =P
-                auto posArg = [args[0]] ~ "--positional" ~ args[nonEndPos .. nonEndPos + 1];
+                    // Hacky solution to support positionals w/ getopt =P
+                    auto posArg = [args[0]] ~ "--positional" ~ args[nonEndPos .. nonEndPos + 1];
 
-                mixin(`auto opts = tuple("positional",` ~ `&t.` ~ positional.stringof ~ ");");
+                    mixin(`auto opts = tuple("positional",` ~ `&t.` ~ positional.stringof ~ ");");
 
-                arraySep = ",";
+                    arraySep = ",";
 
-                getopt(posArg, config.caseSensitive, config.required, opts.expand);
+                    getopt(posArg, config.caseSensitive, config.required, opts.expand);
 
-                args = args[0 .. nonEndPos] ~ args[nonEndPos + 1 .. $];
+                    args = args[0 .. nonEndPos] ~ args[nonEndPos + 1 .. $];
+                }
             }
             catch (GetOptException err)
             {
