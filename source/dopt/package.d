@@ -76,17 +76,20 @@ unittest
     auto args = ["example", "-d", "--verbose", "build", "/usr"];
     auto example = parse!Example(args);
     writeln(example);
+    assert(example == Example(true, true, "", Subcommands(Build(0, ["/usr"]))));
 
     args = [
         "example", "tst", "--profile", "release", "/usr/", "-d", "--verbose"
     ];
     example = parse!Example(args);
+    assert(example == Example(true, true, "", Subcommands(Test(Profile.Release, "/usr/"))));
     writeln(example);
 
     args = [
         "example", "build", "-j", "8", "/usr,/home,/etc", "-c", "/etc/test.conf",
     ];
     example = parse!Example(args);
+    assert(example == Example(false, false, "/etc/test.conf", Subcommands(Build(8, ["/usr,/home,/etc"]))));
     writeln(example);
 
     args = ["example", "-d", "build", "-x", "9", "/usr",];
