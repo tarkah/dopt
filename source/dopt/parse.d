@@ -350,7 +350,7 @@ static positionals(T)(ref T t, ref string[] args)
                 }
                 else if (required)
                 {
-                    throw new GetOptException(format!"Missing values for argument [%s]..."(
+                    throw new GetOptException(format!"Missing values for argument <%s...>"(
                             positionalValue!positional));
                 }
             }
@@ -393,7 +393,7 @@ static positionals(T)(ref T t, ref string[] args)
             }
             catch (GetOptException err)
             {
-                throw new GetOptException(format!"Missing value for argument [%s]"(
+                throw new GetOptException(format!"Missing value for argument <%s>"(
                         positionalValue!positional));
             }
         }
