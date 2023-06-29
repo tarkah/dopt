@@ -46,7 +46,7 @@ unittest
         string[] paths;
     }
 
-    @Command("tst") @Help("Run tests")
+    @Command("test") @Alias("tst") @Help("Run tests")
     struct Test
     {
         @Option() @Long() @Short() @Required()

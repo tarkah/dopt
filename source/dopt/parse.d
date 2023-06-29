@@ -1,6 +1,6 @@
 module dopt.parse;
 
-import std.algorithm : findSplitBefore, filter, each, countUntil;
+import std.algorithm : findSplit, findSplitBefore, filter, each, countUntil;
 import std.array : array;
 import std.conv : text, ConvException;
 import std.format : format;
@@ -13,7 +13,7 @@ import std.uni : toLower;
 
 import dopt.exception : HelpException, UsageException, VersionException;
 import dopt.format : printHelp, printUsage, printVersion;
-import dopt.meta : isNonStrArray;
+import dopt.meta : isNonStrArray, aliasMap;
 import dopt.uda;
 
 struct Help
@@ -42,6 +42,10 @@ alias Result(T) = SumType!(T, Help, Version, Error);
 
 static T parse(T)(ref string[] args)
 {
+    // Replace all aliases w/ their full
+    // command path
+    replaceAliases!T(args);
+
     auto result = parseArgs!(T)(args, []);
 
     T function(Help) onHelp = (help) {
@@ -58,6 +62,21 @@ static T parse(T)(ref string[] args)
     };
 
     return result.match!((T t) => t, onHelp, onVersion, onError);
+}
+
+static replaceAliases(T)(ref string[] args)
+{
+    auto aliases = aliasMap!T;
+
+    foreach (find, replacement; aliases)
+    {
+        auto split = args.findSplit([find]);
+
+        if (!split[1].empty)
+        {
+            args = split[0] ~ replacement ~ split[2];
+        }
+    }
 }
 
 static Result!T parseArgs(T)(ref string[] args, string[] inPath)
