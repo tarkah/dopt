@@ -9,6 +9,5 @@
 	"name": "dopt",
   "targetType": "autodetect",
 	"buildOptions": [
-		"unittests"
 	]
 }
