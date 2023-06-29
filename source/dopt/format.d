@@ -3,6 +3,7 @@ module dopt.format;
 import std.algorithm : map, fold, max, filter;
 import std.array : join, array;
 import std.format : format;
+import std.range : empty;
 import std.stdio : writeln;
 import std.traits : isArray;
 import std.typecons : Nullable;
@@ -89,7 +90,7 @@ private void printSubcommands(Command[] subcommands, ulong maxLeft)
 
         foreach (cmd; subcommands)
         {
-            writeln(SPACE, format!`%*s`(maxLeft, cmd.name), SPACE, cmd.help);
+            writeln(SPACE, format!`%*s`(maxLeft, fmtCommandName(cmd)), SPACE, cmd.help);
         }
     }
 }
@@ -168,11 +169,23 @@ ulong maxLeftLength(T)(T[] items)
         .fold!(max)(seed);
 }
 
+string fmtCommandName(Command cmd)
+{
+    if (cmd.aliases.empty)
+    {
+        return cmd.name;
+    }
+    else
+    {
+        return format!"%s (%-(%s, %))"(cmd.name, cmd.aliases);
+    }
+}
+
 string fmtLeft(T)(T item)
 {
     static if (is(T : Command))
     {
-        return item.name;
+        return fmtCommandName(item);
     }
     else static if (is(T : Positional))
     {

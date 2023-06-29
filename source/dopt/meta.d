@@ -9,6 +9,7 @@ import uda = dopt.uda;
 struct Command
 {
     string name;
+    string[] aliases;
     string help;
     string _version;
 
@@ -59,6 +60,7 @@ static Command build(T)(Nullable!Command parent)
 {
     Command cmd = Command.init;
     cmd.name = uda.commandValue!T;
+    cmd.aliases = uda.aliasValues!T;
     cmd.help = uda.helpValue!T;
     cmd._version = uda.versionValue!T;
 
@@ -83,6 +85,35 @@ static Command build(T)(Nullable!Command parent)
     return cmd;
 }
 
+static string[][string] aliasMap(T)()
+{
+    string[][string] map;
+
+    auto command = build!T(Nullable!Command.init);
+
+    void update(Command cmd)
+    {
+        foreach (_alias; cmd.aliases)
+        {
+            map[_alias] = cmd.path[1 .. $];
+        }
+
+        foreach (subcmd; cmd.subcommands)
+        {
+            update(subcmd);
+        }
+    }
+
+    update(command);
+
+    return map;
+}
+
+static bool isNonStrArray(T)()
+{
+    return isArray!T && !isSomeString!T;
+}
+
 Nullable!Command find(Command cmd, string[] path)
 {
     if (cmd.path == path)
@@ -105,7 +136,9 @@ Nullable!Command find(Command cmd, string[] path)
     return Nullable!Command.init;
 }
 
-private static Global global(alias arg)()
+private:
+
+static Global global(alias arg)()
 {
     static _long = uda.longValue!(arg);
     static _short = uda.shortValue!(arg);
@@ -116,7 +149,7 @@ private static Global global(alias arg)()
     return Global(_long, _short, required, help, value);
 }
 
-private static Option option(alias arg)()
+static Option option(alias arg)()
 {
     static _long = uda.longValue!(arg);
     static _short = uda.shortValue!(arg);
@@ -127,7 +160,7 @@ private static Option option(alias arg)()
     return Option(_long, _short, required, help, value);
 }
 
-private static Value value(alias arg)()
+static Value value(alias arg)()
 {
     static if (isBoolean!(typeof(arg)))
     {
@@ -143,7 +176,7 @@ private static Value value(alias arg)()
     }
 }
 
-private static Positional positional(alias arg)()
+static Positional positional(alias arg)()
 {
     static name = uda.positionalValue!(arg);
     static required = uda.requiredValue!(arg);
@@ -153,7 +186,7 @@ private static Positional positional(alias arg)()
     return Positional(name, required, help, isArray);
 }
 
-private static Command[] subcommands(T)(Command cmd)
+static Command[] subcommands(T)(Command cmd)
 {
     Command[] cmds = [];
 
@@ -173,9 +206,4 @@ private static Command[] subcommands(T)(Command cmd)
     }
 
     return cmds;
-}
-
-static bool isNonStrArray(T)()
-{
-    return isArray!T && !isSomeString!T;
 }

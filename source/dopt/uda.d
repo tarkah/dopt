@@ -71,6 +71,11 @@ struct Parse(T)
     T function(string s) value;
 }
 
+struct Alias
+{
+    string value;
+}
+
 static string commandValue(alias T)()
 {
     alias uda = getUDAs!(T, Command);
@@ -154,6 +159,29 @@ static string shortValue(alias T)()
     else
     {
         return "";
+    }
+}
+
+static string[] aliasValues(alias T)()
+{
+    alias udas = getUDAs!(T, Alias);
+
+    static if (udas.length > 0)
+    {
+        string[] parsed;
+
+        static foreach (uda; udas)
+        {
+            static if (!uda.value.empty)
+            {
+                parsed = parsed ~ uda.value;
+            }
+        }
+        return parsed;
+    }
+    else
+    {
+        return [];
     }
 }
 

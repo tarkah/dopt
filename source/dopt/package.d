@@ -46,7 +46,7 @@ unittest
         string[] paths;
     }
 
-    @Command("tst") @Help("Run tests")
+    @Command("test") @Alias("tst") @Alias("t") @Help("Run tests")
     struct Test
     {
         @Option() @Long() @Short() @Required()
@@ -106,4 +106,93 @@ unittest
 
     args = ["example", "build", "-V",];
     assertThrown!VersionException(parse!Example(args));
+}
+
+unittest
+{
+
+    import std.conv : ConvException;
+    import std.exception;
+    import std.format : format;
+    import std.functional : toDelegate;
+    import std.stdio;
+    import std.sumtype;
+    import std.typecons;
+
+    import dopt.uda;
+    import meta = dopt.meta;
+
+    enum Profile
+    {
+        Debug,
+        Release,
+    }
+
+    static Profile parseProfile(string s)
+    {
+        switch (s)
+        {
+        case "debug":
+            return Profile.Debug;
+        case "release":
+            return Profile.Release;
+        default:
+            throw new ConvException(
+                    format!"%s is not a valid profile. Valid values are: debug, release"(s));
+        }
+    }
+
+    @Command() @Alias("nt") @Help("This")
+    struct This
+    {
+    }
+
+    @Command() @Alias("nh") @Help("That")
+    struct That
+    {
+    }
+
+    alias NestedSub = SumType!(This, That);
+
+    @Command() @Help("A subcommand with nested commands")
+    struct Nested
+    {
+        @Subcommand NestedSub sub;
+    }
+
+    @Command() @Help("A flat subcommand")
+    struct Flat
+    {
+    }
+
+    alias Subcommands = SumType!(Nested, Flat);
+
+    @Command() @Help("Testing nested & aliases")
+    struct Example
+    {
+        @Global() @Short()
+        bool verbose = false;
+        @Subcommand()
+        Subcommands subcmd;
+    }
+
+    auto _meta = meta.build!Example(Nullable!(meta.Command).init);
+    writeln(_meta);
+
+    auto args = ["example", "nested", "-h"];
+    assertThrown!HelpException(parse!Example(args));
+
+    args = ["example", "nested", "this"];
+    auto expanded = parse!Example(args);
+    args = ["example", "nt"];
+    auto nested = parse!Example(args);
+    writeln(nested);
+    assert(expanded == nested);
+
+    args = ["example", "nested", "that", "-v"];
+    expanded = parse!Example(args);
+    args = ["example", "nh", "-v"];
+    nested = parse!Example(args);
+    writeln(nested);
+    assert(expanded == nested);
 }
